@@ -1,18 +1,22 @@
 #include "includes/utils/functions.h"
 
 using namespace boost::json;
-using K = CGAL::Exact_predicates_inexact_constructions_kernel;
+//using K = CGAL::Exact_predicates_inexact_constructions_kernel;
+using K = CGAL::Exact_predicates_exact_constructions_kernel;
 using CDT = CGAL::Constrained_Delaunay_triangulation_2<K>;
 using Point = CDT::Point;
 using Custom_CDT = Custom_Constrained_Delaunay_triangulation_2<K>;
+using Point_2 = K::Point_2;
+using Line_2 = K::Line_2;
 
 int main() {
     value jv;
     read_json("data10.json", jv);
 
-    std::vector<Point> points;
+    std::vector<Point_2> points;
     std::vector<std::pair<int, int>> additional_constraints;
     std::vector<int> region_boundary;
+    Polygon polygon;
 
     if (jv.is_object()) {
         const auto& obj = jv.as_object();
@@ -30,8 +34,13 @@ int main() {
         for (const auto& idx : boundary_array) {
             region_boundary.push_back(idx.as_int64());
         }
-        //std::vector<Point> region_boundary_edges = make_region_boundary(region_boundary, points);
 
+        //Create a polygon from region boundary
+        for (int index : region_boundary) {
+            polygon.push_back(points[index]);
+        }
+        //std::vector<Point_2> region_boundary_edges = make_region_boundary(region_boundary, points);
+        //Add the additional constraints in vector
         for (const auto& constraint : constraints_array) {
             int idx1 = constraint.as_array()[0].as_int64();
             int idx2 = constraint.as_array()[1].as_int64();
@@ -41,19 +50,18 @@ int main() {
         }
     }
 
-    //CDT cdt;
+    //Make the cdt
     Custom_CDT custom_cdt;
     std::vector<CDT::Vertex_handle> vertex_handles;
     for (const auto& point : points) {
         vertex_handles.push_back(custom_cdt.insert(point));
     }
 
-    
-    for (size_t i = 0; i < region_boundary.size(); ++i) {
+    /*for (size_t i = 0; i < region_boundary.size(); ++i) {
         int idx1 = region_boundary[i];
         int idx2 = region_boundary[(i + 1) % region_boundary.size()];
         custom_cdt.insert_constraint(points[idx1], points[idx2]);
-    }
+    }*/
 
     for (const auto& constraint : additional_constraints) {
         custom_cdt.insert_constraint(points[constraint.first], points[constraint.second]);
@@ -69,28 +77,11 @@ int main() {
     std::cout << "Number of obtuse triangles after flips cdt: " << num_obtuses_after << std::endl;
     CGAL::draw(custom_cdt);
     /*==========================================================================*/
-
+    Custom_CDT second = custom_cdt;
+    CGAL::draw(second);
     /*Steiner Points*/
-    //Custom_CDT custom_cdt;
-    /*for (auto vit = cdt.finite_vertices_begin(); vit != cdt.finite_vertices_end(); ++vit) {
-        custom_cdt.insert_no_flip(vit->point());
-    }
-     // Check for validity
-    if (!custom_cdt.is_valid()) {
-        std::cerr << "Warning: Triangulation is not valid after copying." << std::endl;
-    }
-
-    int num_obtuses_before_steiner = count_obtuse_triangles(custom_cdt);
-    std::cout << "Number of obtuse triangles before inserting Steiner points custom_cdt: " << num_obtuses_before_steiner << std::endl;
-    CGAL::draw(custom_cdt);
-
-    for (const auto& constraint : additional_constraints) {
-        custom_cdt.insert_constraint(points[constraint.first], points[constraint.second]);
-    }
     
-    CGAL::draw(custom_cdt);*/
-
-    insert_steiner_points(custom_cdt, points, region_boundary);
+    insert_steiner_points(custom_cdt, points, region_boundary, polygon);
 
     int num_obtuses_after_steiner = count_obtuse_triangles(custom_cdt);
     std::cout << "Number of obtuse triangles after inserting Steiner points custom_cdt: " << num_obtuses_after_steiner << std::endl;

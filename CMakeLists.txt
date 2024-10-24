@@ -3,7 +3,7 @@
 
 cmake_minimum_required(VERSION 3.1...3.23)
 
-project( proj1 )
+project( pro12 )
 
 # Specify the path to the Boost folder
 if(DEFINED ENV{BOOST_ROOT})
@@ -51,18 +51,19 @@ include_directories(${Boost_INCLUDE_DIRS})
 # include for local package
 
 
-# Creating entries for target: proj1
+# Creating entries for target: pro12
 # ############################
 
-add_executable(proj1 proj1.cpp includes/utils/functions.cpp)
+add_executable(pro12 pro12.cpp includes/utils/functions.cpp)
 
-add_to_cached_list( CGAL_EXECUTABLE_TARGETS proj1 )
+add_to_cached_list( CGAL_EXECUTABLE_TARGETS pro12 )
 
 # Link the executable to CGAL and third-party libraries
-target_link_libraries(proj1 PUBLIC Qt5::Widgets Qt5::Gui Qt5::Core CGAL::CGAL Boost::boost Boost::json)
+target_link_libraries(pro12 PUBLIC Qt5::Widgets Qt5::Gui Qt5::Core CGAL::CGAL Boost::boost Boost::json)
 
 if(CGAL_Qt5_FOUND)
   add_definitions(-DCGAL_USE_BASIC_VIEWER)
-  target_link_libraries(proj1 PRIVATE CGAL::CGAL_Qt5)
+  target_link_libraries(pro12
+ PRIVATE CGAL::CGAL_Qt5)
 endif()
 

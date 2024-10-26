@@ -5,6 +5,7 @@
 
 
 #include <CGAL/Constrained_Delaunay_triangulation_2.h>
+//#include <CGAL/Delaunay_triangulation_2.h>
 
 
 
@@ -18,6 +19,8 @@ public:
 
     using Base = CGAL::Constrained_Delaunay_triangulation_2<Gt, Tds, Itag>;
 
+    
+
     using typename Base::Face_handle;
 
     using typename Base::Point;
@@ -26,6 +29,8 @@ public:
 
     using typename Base::Locate_type;
 
+    
+    //using CGAL::Delaunay_triangulation_2<Gt, Tds>::nearest_vertex;
 
     // Constructors
 

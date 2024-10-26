@@ -1,21 +1,23 @@
 #include "includes/utils/functions.h"
 
 using namespace boost::json;
+using namespace std;
 //using K = CGAL::Exact_predicates_inexact_constructions_kernel;
 using K = CGAL::Exact_predicates_exact_constructions_kernel;
 using CDT = CGAL::Constrained_Delaunay_triangulation_2<K>;
 using Point = CDT::Point;
 using Custom_CDT = Custom_Constrained_Delaunay_triangulation_2<K>;
 using Point_2 = K::Point_2;
-using Line_2 = K::Line_2;
+using Vertex_handle = CDT::Vertex_handle;
+
 
 int main() {
     value jv;
-    read_json("data10.json", jv);
+    read_json("data2.json", jv);
 
-    std::vector<Point_2> points;
-    std::vector<std::pair<int, int>> additional_constraints;
-    std::vector<int> region_boundary;
+    vector<Point_2> points;
+    vector<std::pair<int, int>> additional_constraints;
+    vector<int> region_boundary;
     Polygon polygon;
 
     if (jv.is_object()) {
@@ -25,7 +27,7 @@ int main() {
         const auto& boundary_array = obj.at("region_boundary").as_array();
         const auto& constraints_array = obj.at("additional_constraints").as_array();
 
-        for (std::size_t i = 0; i < x_array.size(); ++i) {
+        for (int i = 0; i < x_array.size(); ++i) {
             double x = x_array[i].is_double() ? x_array[i].as_double() : static_cast<double>(x_array[i].as_int64());
             double y = y_array[i].is_double() ? y_array[i].as_double() : static_cast<double>(y_array[i].as_int64());
             points.emplace_back(x, y);
@@ -35,11 +37,7 @@ int main() {
             region_boundary.push_back(idx.as_int64());
         }
 
-        //Create a polygon from region boundary
-        for (int index : region_boundary) {
-            polygon.push_back(points[index]);
-        }
-        //std::vector<Point_2> region_boundary_edges = make_region_boundary(region_boundary, points);
+        //vector<Point_2> region_boundary_edges = make_region_boundary(region_boundary, points);
         //Add the additional constraints in vector
         for (const auto& constraint : constraints_array) {
             int idx1 = constraint.as_array()[0].as_int64();
@@ -49,43 +47,81 @@ int main() {
             }
         }
     }
+    //Create a polygon from region boundary
+    for (int index : region_boundary) {
+        polygon.push_back(points[index]);
+    }
 
     //Make the cdt
     Custom_CDT custom_cdt;
-    std::vector<CDT::Vertex_handle> vertex_handles;
+    vector<Vertex_handle> vertex_handles;
     for (const auto& point : points) {
         vertex_handles.push_back(custom_cdt.insert(point));
     }
-
-    /*for (size_t i = 0; i < region_boundary.size(); ++i) {
-        int idx1 = region_boundary[i];
-        int idx2 = region_boundary[(i + 1) % region_boundary.size()];
-        custom_cdt.insert_constraint(points[idx1], points[idx2]);
-    }*/
 
     for (const auto& constraint : additional_constraints) {
         custom_cdt.insert_constraint(points[constraint.first], points[constraint.second]);
     }
     
     //CGAL::draw(cdt);
-    int num_obtuses_before = count_obtuse_triangles(custom_cdt);
-    std::cout << "Number of obtuse triangles before flips: " << num_obtuses_before << std::endl;
+    int num_obtuses_before = count_obtuse_triangles(custom_cdt, polygon);
+    cout<<"Number of obtuse triangles before FLIPS: " <<num_obtuses_before<<endl;
 
     /*Flips*/
-    start_the_flips(custom_cdt, points, additional_constraints, region_boundary);
-    int num_obtuses_after = count_obtuse_triangles(custom_cdt);
-    std::cout << "Number of obtuse triangles after flips cdt: " << num_obtuses_after << std::endl;
+    start_the_flips(custom_cdt, polygon);
+    int num_obtuses_after = count_obtuse_triangles(custom_cdt, polygon);
+    cout <<"Number of obtuse triangles after FLIPS : "<<num_obtuses_after<<endl;
     CGAL::draw(custom_cdt);
-    /*==========================================================================*/
-    Custom_CDT second = custom_cdt;
-    CGAL::draw(second);
-    /*Steiner Points*/
-    
-    insert_steiner_points(custom_cdt, points, region_boundary, polygon);
 
-    int num_obtuses_after_steiner = count_obtuse_triangles(custom_cdt);
-    std::cout << "Number of obtuse triangles after inserting Steiner points custom_cdt: " << num_obtuses_after_steiner << std::endl;
+    num_obtuses_before = count_obtuse_triangles(custom_cdt, polygon);
+    cout<<"Number of obtuse triangles before inserting CIRCUMCENTER and CENTROIDS: "<<num_obtuses_before<<endl;
+    /*Steiner Points circumcenter and centroids*/
+    insert_circumcenter_centroid(custom_cdt, polygon);
+    num_obtuses_after = count_obtuse_triangles(custom_cdt, polygon);
+    cout << "Number of obtuse triangles after inserting CIRCUMCENTER and CENTROIDS: "<<num_obtuses_after<<endl;
+    CGAL::draw(custom_cdt);
 
+    num_obtuses_before = count_obtuse_triangles(custom_cdt, polygon);
+    cout<<"Number of obtuse triangles inserting PROJECTION: " <<num_obtuses_before<<endl;
+    /*Steiner Points Projections*/
+    insert_projection(custom_cdt, polygon);
+    num_obtuses_after = count_obtuse_triangles(custom_cdt, polygon);
+    cout<<"Number of obtuse triangles after inserting PROJECTION: "<<num_obtuses_after<<endl;
+    CGAL::draw(custom_cdt);
+
+    //Midpoint
+    num_obtuses_before = count_obtuse_triangles(custom_cdt, polygon);
+    cout<<"Number of obtuse triangles inserting MIDPOINT: " <<num_obtuses_before<<endl;
+    /*Steiner Points Midpoint*/
+    insert_midpoint(custom_cdt, polygon);
+    num_obtuses_after = count_obtuse_triangles(custom_cdt, polygon);
+    cout<<"Number of obtuse triangles after inserting MIDPOINT: "<<num_obtuses_after<<endl;
+    CGAL::draw(custom_cdt);
+
+    //Incenter
+    num_obtuses_before = count_obtuse_triangles(custom_cdt, polygon);
+    cout<<"Number of obtuse triangles inserting INCENTER: " <<num_obtuses_before<<endl;
+    /*Steiner Points Incenter*/
+    insert_incenter(custom_cdt, polygon);
+    num_obtuses_after = count_obtuse_triangles(custom_cdt, polygon);
+    cout<<"Number of obtuse triangles after inserting INCENTER: "<<num_obtuses_after<<endl;
+    CGAL::draw(custom_cdt);
+
+    //Bisector
+    num_obtuses_before = count_obtuse_triangles(custom_cdt, polygon);
+    cout<<"Number of obtuse triangles inserting BISECTOR: " <<num_obtuses_before<<endl;
+    /*Steiner Points Bisector*/
+    insert_bisector(custom_cdt, polygon);
+    num_obtuses_after = count_obtuse_triangles(custom_cdt, polygon);
+    cout<<"Number of obtuse triangles after inserting BISECTOR: "<<num_obtuses_after<<endl;
+    CGAL::draw(custom_cdt);
+
+    num_obtuses_before = count_obtuse_triangles(custom_cdt, polygon);
+    cout<<"Number of obtuse triangles inserting PROJECTION: " <<num_obtuses_before<<endl;
+    /*Steiner Points Projections*/
+    insert_projection(custom_cdt, polygon);
+    num_obtuses_after = count_obtuse_triangles(custom_cdt, polygon);
+    cout<<"Number of obtuse triangles after inserting PROJECTION: "<<num_obtuses_after<<endl;
     CGAL::draw(custom_cdt);
 
     return 0;

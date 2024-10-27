@@ -61,7 +61,6 @@ Point_2 find_obtuse_vertex(const Point_2& v1, const Point_2& v2, const Point_2& 
 //Steiner methods
 void insert_circumcenter_centroid(Custom_CDT& custom_cdt, const Polygon& polygon);
 void insert_projection(Custom_CDT& custom_cdt, const Polygon polygon);
-bool insert_circumcenter(Custom_CDT& custom_cdt, Custom_CDT& simulation, const Point_2& circumcenter, const Polygon& polygon);
 void insert_incenter(Custom_CDT& custom_cdt, const Polygon& polygon);
 void insert_bisector(Custom_CDT& custom_cdt, const Polygon& polygon);
 void insert_midpoint(Custom_CDT& custom_cdt, const Polygon& polygon);

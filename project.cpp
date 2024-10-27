@@ -14,8 +14,8 @@ int main() {
     value jv;
 
     // REPLACE THE FOLLOWING LINE WITH ANY FROM THE FOLDER TESTS/TEST_DOC.TXT
-    read_json("tests/pdf.json", jv);       //5 obtuses 76%  success
-    
+    read_json("tests/pdf.json", jv);
+
     vector<Point_2> points;
     vector<std::pair<int, int>> additional_constraints;
     vector<int> region_boundary;
@@ -68,67 +68,72 @@ int main() {
     }
     
 //////////// PHASE 2: FLIPS & STEINER POINTS //////////////////////////////
-
+    int init_obtuses = count_obtuse_triangles(custom_cdt, polygon);
+    cout<<"Initial number of obtuses: "<<init_obtuses<<endl;
+    int end;
     //If we have progress (reduce obtuses) run again
     bool progress = true;
     while(progress){
         progress = false;
         int start = count_obtuse_triangles(custom_cdt, polygon);
         int num_obtuses_before = start;
-        cout<<"Num of Obtuses before FLIPS: " <<num_obtuses_before<<endl;
+        //cout<<"Num of Obtuses before FLIPS: " <<num_obtuses_before<<endl;
         /*Flips*/
         start_the_flips(custom_cdt, polygon);
         int num_obtuses_after = count_obtuse_triangles(custom_cdt, polygon);
-        cout <<"Num of Obtuses after FLIPS: "<<num_obtuses_after<<endl;
+        //cout <<"Num of Obtuses after FLIPS: "<<num_obtuses_after<<endl;
         /* CGAL::draw(custom_cdt); */
         if(num_obtuses_after == 0) break;
 
         //Circumcenter - Centroid
         num_obtuses_before = count_obtuse_triangles(custom_cdt, polygon);
-        cout<<"Num of Obtuses before CIRCUMCENTER and CENTROIDS: "<<num_obtuses_before<<endl;
+        //cout<<"Num of Obtuses before CIRCUMCENTER and CENTROIDS: "<<num_obtuses_before<<endl;
         /*Steiner Points circumcenter and centroids*/
         insert_circumcenter_centroid(custom_cdt, polygon);
         num_obtuses_after = count_obtuse_triangles(custom_cdt, polygon);
-        cout << "Num of Obtuses after CIRCUMCENTER and CENTROIDS: "<<num_obtuses_after<<endl;
+        //cout << "Num of Obtuses after CIRCUMCENTER and CENTROIDS: "<<num_obtuses_after<<endl;
         /* CGAL::draw(custom_cdt); */
         if(num_obtuses_after == 0) break;
 
         //Midpoint
         num_obtuses_before = count_obtuse_triangles(custom_cdt, polygon);
-        cout<<"Num of Obtuses before MIDPOINT: " <<num_obtuses_before<<endl;
+        //cout<<"Num of Obtuses before MIDPOINT: " <<num_obtuses_before<<endl;
         /*Steiner Points Midpoint*/
         insert_midpoint(custom_cdt, polygon);
         num_obtuses_after = count_obtuse_triangles(custom_cdt, polygon);
-        cout<<"Num of Obtuses after MIDPOINT: "<<num_obtuses_after<<endl;
+        //cout<<"Num of Obtuses after MIDPOINT: "<<num_obtuses_after<<endl;
         /* CGAL::draw(custom_cdt); */
         if(num_obtuses_after == 0) break;
 
         //Projection
         num_obtuses_before = count_obtuse_triangles(custom_cdt, polygon);
-        cout<<"Num of Obtuses before PROJECTION: " <<num_obtuses_before<<endl;
+        //cout<<"Num of Obtuses before PROJECTION: " <<num_obtuses_before<<endl;
         /*Steiner Points Projections*/
         insert_projection(custom_cdt, polygon);
         num_obtuses_after = count_obtuse_triangles(custom_cdt, polygon);
-        cout<<"Num of Obtuses after PROJECTION: "<<num_obtuses_after<<endl;
+        //cout<<"Num of Obtuses after PROJECTION: "<<num_obtuses_after<<endl;
         /* CGAL::draw(custom_cdt); */
         if(num_obtuses_after == 0) break;
         
         //Orthocenter
         num_obtuses_before = count_obtuse_triangles(custom_cdt, polygon);
-        cout<<"Num of Obtuses before ORTHOCENTER: " <<num_obtuses_before<<endl;
+        //cout<<"Num of Obtuses before ORTHOCENTER: " <<num_obtuses_before<<endl;
         /*Steiner Points Orthocenter*/
         insert_orthocenter(custom_cdt, polygon);
         num_obtuses_after = count_obtuse_triangles(custom_cdt, polygon);
-        cout<<"Num of Obtuses after ORTHOCENTER: "<<num_obtuses_after<<endl;
+        //cout<<"Num of Obtuses after ORTHOCENTER: "<<num_obtuses_after<<endl;
         //CGAL::draw(custom_cdt);
         if(num_obtuses_after == 0) break;
         
-        int end = num_obtuses_after;
+        end = num_obtuses_after;
         if(end < start ) progress = true;
         else progress = false;
         if(end == 0) break;
     }
-
+    cout<<"**Final number of obtuses: "<<count_obtuse_triangles(custom_cdt, polygon)<<" **"<<endl;
+    double success;
+    if(init_obtuses>0) success = ((double)end/(double)init_obtuses)*100;
+    cout<<100-success<<"%"<<" reduction success the obtuse triangles"<<endl;
 //////////// PHASE 3: JSON FILE OUTPUT //////////////////////////////
 
     output(jv, custom_cdt, points);

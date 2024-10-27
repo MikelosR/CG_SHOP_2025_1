@@ -1,6 +1,0 @@
-/home/dre/Projects/CG_SHOP_2025_1/CMakeFiles/CGAL_Qt5_moc_and_resources.dir
-/home/dre/Projects/CG_SHOP_2025_1/CMakeFiles/project.dir
-/home/dre/Projects/CG_SHOP_2025_1/CMakeFiles/edit_cache.dir
-/home/dre/Projects/CG_SHOP_2025_1/CMakeFiles/rebuild_cache.dir
-/home/dre/Projects/CG_SHOP_2025_1/CMakeFiles/CGAL_Qt5_moc_and_resources_autogen_timestamp_deps.dir
-/home/dre/Projects/CG_SHOP_2025_1/CMakeFiles/CGAL_Qt5_moc_and_resources_autogen.dir

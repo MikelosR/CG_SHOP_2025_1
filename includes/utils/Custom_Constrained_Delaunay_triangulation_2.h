@@ -5,7 +5,6 @@
 
 
 #include <CGAL/Constrained_Delaunay_triangulation_2.h>
-//#include <CGAL/Delaunay_triangulation_2.h>
 
 
 
@@ -77,7 +76,6 @@ public:
     }
 
 };
-
 
 
 #endif // CGAL_CUSTOM_CONSTRAINED_DELAUNAY_TRIANGULATION_2_H

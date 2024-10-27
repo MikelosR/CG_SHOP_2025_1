@@ -1,10 +1,9 @@
 #include "functions.h"
 #include "includes/utils/Custom_Constrained_Delaunay_triangulation_2.h"
-#include <CGAL/Polygon_2_algorithms.h>
+
 
 using namespace boost::json;
 using namespace std;
-//using K = CGAL::Exact_predicates_inexact_constructions_kernel;
 using K = CGAL::Exact_predicates_exact_constructions_kernel;
 using CDT = CGAL::Constrained_Delaunay_triangulation_2<K>;
 using Point = CDT::Point;
@@ -20,12 +19,10 @@ double squared_distance(const Point_2& a, const Point_2& b) {
     return CGAL::to_double(CGAL::squared_distance(a, b));
 }
 
-//Check if a triangle is obtuse
 bool is_obtuse(const Point_2& a, const Point_2& b, const Point_2& c) {
-    double ab2 = CGAL::to_double(squared_distance(a, b));
-    double ac2 = CGAL::to_double(squared_distance(a, c));
-    double bc2 = CGAL::to_double(squared_distance(b, c));
-    return (ab2 + ac2 < bc2) || (ab2 + bc2 < ac2) || (ac2 + bc2 < ab2);
+    return (CGAL::angle(a, b, c) == CGAL::OBTUSE || 
+            CGAL::angle(b, a, c) == CGAL::OBTUSE || 
+            CGAL::angle(a, c, b) == CGAL::OBTUSE);
 }
 
 //Read JSON file
@@ -133,7 +130,7 @@ void insert_midpoint(Custom_CDT& custom_cdt, const Polygon& polygon) {
                 CGAL::Segment_2 longest_edge = find_longest_edge(p1, p2, p3);
                 Point_2 midpoint = CGAL::midpoint(longest_edge.source(), longest_edge.target());
 
-                if (can_insert_on_midpoint(midpoint, polygon)) {
+                if (is_point_inside_region(midpoint, polygon)) {
                     int obtuses_before = count_obtuse_triangles(simulation, polygon);
                     simulation.insert_no_flip(midpoint);
                     start_the_flips(simulation, polygon);
@@ -146,14 +143,48 @@ void insert_midpoint(Custom_CDT& custom_cdt, const Polygon& polygon) {
                     }
                 }
             }
+            if(count_obtuse_triangles(custom_cdt, polygon) == 0) progress = 0;
         }
     }
 }
 
-bool can_insert_on_midpoint(const Point_2& midpoint_point, const Polygon polygon) {
-    //Check if you projected point is on side (boundary)
-    if (is_point_inside_region(midpoint_point, polygon)) return true;
-    else return false;
+
+void insert_orthocenter(Custom_CDT& custom_cdt, const Polygon& polygon) {
+    bool progress = true;
+    while (progress) {
+        progress = false;
+        for (auto face = custom_cdt.finite_faces_begin(); face != custom_cdt.finite_faces_end(); ++face) {
+            Point_2 p1 = face->vertex(0)->point();
+            Point_2 p2 = face->vertex(1)->point();
+            Point_2 p3 = face->vertex(2)->point();
+
+            //Check if the triangle is obtuse
+            if (is_obtuse(p1, p2, p3)) {
+                Custom_CDT simulation = custom_cdt;
+                Point_2 obtuse_vertex = find_obtuse_vertex(p1, p2, p3);
+
+                //Calculate the orthocenter of the obtuse triangle
+                Point_2 orthocenter = find_orthocenter(p1, p2, p3);
+
+                //Verify if the orthocenter point can be inserted
+                if (is_point_inside_region(orthocenter, polygon)) {
+                    int obtuses_before = count_obtuse_triangles(simulation, polygon);
+                    simulation.insert_no_flip(orthocenter);
+                    start_the_flips(simulation, polygon);
+
+                    //Check if insertion of orthocenter reduces obtuse triangles
+                    if (obtuses_before > count_obtuse_triangles(simulation, polygon)) {
+                        custom_cdt.insert_no_flip(orthocenter);
+                        start_the_flips(custom_cdt, polygon);
+                        progress = true;
+                        std::cout << "Orthocenter inserted to reduce obtuse angles.\n";
+                        break;
+                    }
+                }
+            }
+            if(count_obtuse_triangles(custom_cdt, polygon) == 0) progress = 0;
+        }
+    }
 }
 
 
@@ -170,7 +201,7 @@ void insert_incenter(Custom_CDT& custom_cdt, const Polygon& polygon) {
                 Custom_CDT simulation = custom_cdt;
                 Point_2 incenter = find_incenter(p1, p2, p3);
 
-                if (can_insert_on_midpoint(incenter, polygon)) {
+                if (is_point_inside_region(incenter, polygon)) {
                     int obtuses_before = count_obtuse_triangles(simulation, polygon);
                     simulation.insert_no_flip(incenter);
                     start_the_flips(simulation, polygon);
@@ -183,22 +214,23 @@ void insert_incenter(Custom_CDT& custom_cdt, const Polygon& polygon) {
                     }
                 }
             }
+            if(count_obtuse_triangles(custom_cdt, polygon) == 0) progress = 0;
         }
     }
 }
 
 
 Point_2 find_incenter(const Point_2& p1, const Point_2& p2, const Point_2& p3) {
-    // Calculate the lengths of the sides
+    //Calculate the lengths of the sides
     double a = std::sqrt(CGAL::to_double(CGAL::squared_distance(p2, p3)));
     double b = std::sqrt(CGAL::to_double(CGAL::squared_distance(p1, p3)));
     double c = std::sqrt(CGAL::to_double(CGAL::squared_distance(p1, p2)));
 
-    // Calculate the coordinates of the incenter using CGAL types
+    //Calculate the coordinates of the incenter using CGAL types
     auto incenter_x = (a * CGAL::to_double(p1.x()) + b * CGAL::to_double(p2.x()) + c * CGAL::to_double(p3.x())) / (a + b + c);
     auto incenter_y = (a * CGAL::to_double(p1.y()) + b * CGAL::to_double(p2.y()) + c * CGAL::to_double(p3.y())) / (a + b + c);
 
-    // Return the incenter as a Point_2 object
+    //Return the incenter as a Point_2 object
     return Point_2(incenter_x, incenter_y);
 }
 
@@ -216,7 +248,6 @@ void insert_bisector(Custom_CDT& custom_cdt, const Polygon& polygon) {
                 Point_2 obtuse_vertex = find_obtuse_vertex(p1, p2, p3);
                 Point_2 opposite1, opposite2;
 
-                // Identify the opposite vertices based on the obtuse vertex
                 if (obtuse_vertex == p1) {
                     opposite1 = p2;
                     opposite2 = p3;
@@ -228,49 +259,43 @@ void insert_bisector(Custom_CDT& custom_cdt, const Polygon& polygon) {
                     opposite2 = p2;
                 }
 
-                // Calculate the centroid of the triangle formed by the three points
-                Point_2 centroid_opposites = CGAL::centroid(obtuse_vertex, opposite1, opposite2);
-                // Calculate the midpoint between the obtuse vertex and the centroid
-                Point_2 bisector_midpoint = CGAL::midpoint(obtuse_vertex, centroid_opposites);
+                // Calculate the medial point of the longest side
+                Point_2 medial_point = find_medial_of_longest_side(p1, p2, p3);
 
-                if (can_insert_on_projection(bisector_midpoint, polygon)) {
+                if (is_point_inside_region(medial_point, polygon)) {
                     int obtuses_before = count_obtuse_triangles(simulation, polygon);
-                    simulation.insert_no_flip(bisector_midpoint);
+                    simulation.insert_no_flip(medial_point);
                     start_the_flips(simulation, polygon);
                     if (obtuses_before > count_obtuse_triangles(simulation, polygon)) {
-                        custom_cdt.insert_no_flip(bisector_midpoint);
+                        custom_cdt.insert_no_flip(medial_point);
                         start_the_flips(custom_cdt, polygon);
                         progress = true;
-                        std::cout << "Bisector midpoint inserted to reduce obtuse angles.\n";
+                        std::cout << "Medial point of the longest side inserted to reduce obtuse angles.\n";
                         break;
                     }
                 }
             }
+            if(count_obtuse_triangles(custom_cdt, polygon) == 0) progress = 0;
         }
     }
 }
 
 
-
-
-static int num = 0;
-static int obt = 0;
 void insert_projection(Custom_CDT& custom_cdt, const Polygon polygon){
     //Projection case
+    //Progress flag to terminate the loop if after from 1 for loop without progress (no reduce the obtuses) to reminate the insert_projection
     bool progress = true;
+    bool fill_boundary = true;
     while(progress){
-        progress = false;
+        //If we end with the loops for the boundary faces, set the progress of main case false
+        if(!fill_boundary) progress = false;
         for (auto face = custom_cdt.finite_faces_begin(); face != custom_cdt.finite_faces_end(); ++face){
-            num++;
             Point_2 p1 = face->vertex(0)->point();
             Point_2 p2 = face->vertex(1)->point();
             Point_2 p3 = face->vertex(2)->point();
             Point_2 opposite1, opposite2;
 
-            //Copy the cdt for simulation
-            Custom_CDT simulation = custom_cdt;
             if(is_obtuse(p1, p2, p3)){
-                obt++;
                 Point_2 obtuse_angle_vertex = find_obtuse_vertex(p1, p2, p3);            
                 //Face_handle triangleA = face;
                 //Find the obtuse point, and the 2 opposites
@@ -286,42 +311,80 @@ void insert_projection(Custom_CDT& custom_cdt, const Polygon polygon){
                 }
                 Line_2 line(opposite1, opposite2);
                 Point_2 projected_point = line.projection(obtuse_angle_vertex);
-                bool insert_projection = can_insert_on_projection(projected_point, polygon);
-                if(insert_projection){
-                    /*Simulate insertion of Projection*/
-                    int obtuses_before = count_obtuse_triangles(simulation, polygon);
-                    simulation.insert_no_flip(projected_point);
+                //Copy the cdt for simulation
+                Custom_CDT simulation = custom_cdt;
+                bool insert_projection = is_point_inside_region(projected_point, polygon);
+                
+                int obtuses_before = count_obtuse_triangles(simulation, polygon);
+                //Itarate all the faces of the boundary. If the point in side (not on) of the boundary is obtuse, insert projection
+                if(fill_boundary && insert_projection){
+                    if(is_face_on_boundary(custom_cdt, face) && !(polygon.bounded_side(obtuse_angle_vertex) == CGAL::ON_BOUNDARY)){
+                        simulation.insert_no_flip(projected_point);
+                        start_the_flips(simulation, polygon);
+                        if (obtuses_before > count_obtuse_triangles(simulation, polygon)){
+                            /*Original insertion of Projection*/
+                            custom_cdt.insert_no_flip(projected_point);
+                            start_the_flips(custom_cdt, polygon);
+                        }
+                    }
+                }
+                //main case, not only the boundary faces
+                else if(insert_projection){
+                    simulation.insert(projected_point);
                     start_the_flips(simulation, polygon);
+
                     if (obtuses_before > count_obtuse_triangles(simulation, polygon)){
                         /*Original insertion of Projection*/
                         custom_cdt.insert_no_flip(projected_point);
                         start_the_flips(custom_cdt, polygon);
                         progress = true;
-                        cout<<"The projected_point steiner inserted 1st"<<endl;
                         break;
-                    } 
+                    }
+                    //Case the projection point reduce -1 the obtuse angle, but make new obtuse angle in the neighbor
+                    //If this neighbor is boundary face (at least 2 points lies in the boundary polygon) and the projection point
+                    //is part of this face but is in (not on) the boundary, add the projection
+                    else if (obtuses_before == count_obtuse_triangles(simulation, polygon)) {
+                    
+                        for (auto sim_face = simulation.finite_faces_begin(); sim_face != simulation.finite_faces_end(); ++sim_face) {
+                            if (simulation.is_infinite(sim_face)) continue;
+                            
+                            // Check if the projected point is part of a boundary face
+                            if (sim_face->vertex(0)->point() == projected_point ||
+                                sim_face->vertex(1)->point() == projected_point ||
+                                sim_face->vertex(2)->point() == projected_point) {
+                                if (is_face_on_boundary(simulation, sim_face)) {
+                                    if(is_obtuse(sim_face->vertex(0)->point(), sim_face->vertex(1)->point(), sim_face->vertex(2)->point())){
+                                        //Insert into the original triangulation
+                                        custom_cdt.insert_no_flip(projected_point);
+                                        start_the_flips(custom_cdt, polygon);
+                                        progress = true;
+                                        //"call" the fill boundary case
+                                        fill_boundary = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
-                /////////////////////////
             }
+            //when the case of itaration of boundary faces ends
+            if((++face == custom_cdt.finite_faces_end()) && (fill_boundary)){
+                fill_boundary = false;
+            }
+            --face;
             
             if(count_obtuse_triangles(custom_cdt, polygon) == 0){
                 CGAL::draw(custom_cdt);
                 progress = false;
                 break;
             }
+            continue;
         }
+        
     }
-    
-    cout << "Mikelos has loops: " <<num<<" and we have "<<count_obtuse_triangles(custom_cdt, polygon)<<" obtuses"<<endl;
-    cout<<"In is obtuse i have "<<obt<<" loops"<<endl;
-    CGAL::draw(custom_cdt);
 }
 
-bool can_insert_on_projection(const Point_2& projected_point, const Polygon polygon) {
-    //Check if you projected point is on side (boundary)
-    if (is_point_inside_region(projected_point, polygon)) return true;
-    else return false;
-}
 
 // Function to check if an edge is part of the boundary of the polygon
 bool is_edge_in_boundary(const Point_2& p1, const Point_2& p2, const Polygon& polygon) {
@@ -336,13 +399,9 @@ bool is_edge_in_boundary(const Point_2& p1, const Point_2& p2, const Polygon& po
 
 //Ιnsert Steiner points at circumcenters
 void insert_circumcenter_centroid(Custom_CDT& custom_cdt, const Polygon& polygon) {
-    
-    cout<<"i am in  insert_steiner_points "<<endl;
-    
     bool progress = true;
     while (progress ) {
         progress = false;
-        
         for (auto face = custom_cdt.finite_faces_begin(); face != custom_cdt.finite_faces_end(); ++face) {
             // Get the vertices of the current triangle
             Point_2 p1 = face->vertex(0)->point();
@@ -354,40 +413,34 @@ void insert_circumcenter_centroid(Custom_CDT& custom_cdt, const Polygon& polygon
                 Face_handle triangleA = face;
                 Point circumcenter = CGAL::circumcenter(p1, p2, p3);
                 if (is_point_inside_region(circumcenter, polygon)){
-                    
-                    ////////////////////////////////
                     Custom_CDT simulation = custom_cdt;
                     if(is_convex(p1, p2, p3, circumcenter)){
-                        cout<<"IS CONVEX"<<endl;
-
                         int initial_obtuse_count = count_obtuse_triangles(custom_cdt, polygon);
                         /*Simulate circumcenter insertion*/
                         simulation.insert_no_flip(circumcenter);
                         start_the_flips(simulation, polygon);
                         int final_obtuse_count = count_obtuse_triangles(simulation, polygon);
 
-                        // Check if the flip resolved obtuse angles in the two faces
+                        //Check if the flip resolved obtuse angles in the two faces
                         if (final_obtuse_count < initial_obtuse_count) {
                             /*Original circumcenter insertion*/
                             custom_cdt.insert_no_flip(circumcenter);
                             start_the_flips(custom_cdt, polygon);
                             progress = true;
                             final_obtuse_count = count_obtuse_triangles(custom_cdt, polygon);
-                            //custom_cdt.flip(triangleA, i);
-                            cout<<"Obtuse angles reduced: initial = "<<initial_obtuse_count<<", final = " <<final_obtuse_count<<endl;
                             break;
                         }
                     }
                     else{
+                        //Cetroid case (if circumcenter went out of bounds)
                         Point_2 centroid = CGAL::centroid(p1, p2, p3);
-                        //Custom_CDT simulation = custom_cdt;
                         bool insert_centroid = can_insert_centroid(custom_cdt, triangleA, centroid, polygon);
+                        //Just check if the insertion of centroid has a benefit
                         if(insert_centroid){
                             custom_cdt.insert(centroid);
                             start_the_flips(custom_cdt, polygon);
                             progress = true;
                             cout<<"The centroid steiner inserted"<<endl;
-                            //CGAL::draw(custom_cdt);
                             break;
                         }
                     }
@@ -422,17 +475,6 @@ bool can_insert_centroid(Custom_CDT& custom_cdt, Face_handle& triangleA, const P
 }
 
 
-bool is_point_inside_triangle(const Point_2& p1, const Point_2& p2, const Point_2& p3, const Point_2& steiner_point) {
-    //Determine the position of the steiner_point relative to the oriented circumcircle of the triangle
-    CGAL::Oriented_side result = CGAL::side_of_oriented_circle(p1, p2, p3, steiner_point);
-
-    //If the result is CGAL::ON_NEGATIVE_SIDE or CGAL::ON_ORIENTED_BOUNDARY, the point is inside the triangle or on the border
-    return result == CGAL::ON_NEGATIVE_SIDE || result == CGAL::ON_ORIENTED_BOUNDARY;
-    /*CGAL::ON_POSITIVE_SIDE means the point is outside the circumcircle (outside the triangle).
-    CGAL::ON_NEGATIVE_SIDE means the point is inside the circumcircle.
-    CGAL::ON_ORIENTED_BOUNDARY means the point lies on the circumcircle.*/
-}
-
 void start_the_flips(Custom_CDT& cdt, const Polygon& polygon){
     bool progress = true;
     while(progress){
@@ -456,7 +498,6 @@ void start_the_flips(Custom_CDT& cdt, const Polygon& polygon){
             if(can_flip(p1,p2,p3,p4)){
                 cdt.flip(f1, i);
                 progress = true;
-                cout<<"FLIPPED!"<<endl;
                 break;
             }
             else continue;
@@ -464,42 +505,29 @@ void start_the_flips(Custom_CDT& cdt, const Polygon& polygon){
     }
 }
 
-//if 1 point is on the boundary
+//If 1 point is on the boundary
 bool is_point_inside_region(const Point_2& point, const Polygon polygon) {
 
     //Check if the point is inside the polygon
     return (polygon.bounded_side(point) == CGAL::ON_BOUNDED_SIDE) || (polygon.bounded_side(point) == CGAL::ON_BOUNDARY);
 }
 
-vector<Point_2> make_region_boundary(const vector<int>& region_bound_indx, const vector<Point_2>& points) {
-    vector<Point_2> region_boundary;
-    for (int index : region_bound_indx) {
-        if (index >= 0 && index < points.size()) {
-            region_boundary.push_back(points[index]);
-        } else {
-            //Handle error if the index is out of bounds
-            std::cerr << "Error: Index " << index << " is out of bounds for the points vector." <<endl;
-        }
-    }
-    return region_boundary;
-}
-
 
 Point_2 find_obtuse_vertex(const Point_2& v1, const Point_2& v2, const Point_2& v3) {
-    // Calculate squared distances
+    //Calculate squared distances
     double ab2 = CGAL::to_double(squared_distance(v1, v2));
     double ac2 = CGAL::to_double(squared_distance(v1, v3));
     double bc2 = CGAL::to_double(squared_distance(v2, v3));
 
-    // Check if the angle at v1 is obtuse
+    //Check if the angle at v1 is obtuse
     if (ab2 + ac2 < bc2) {
         return v1; // obtuse angle at v1
     }
-    // Check if the angle at v2 is obtuse
+    //Check if the angle at v2 is obtuse
     if (ab2 + bc2 < ac2) {
         return v2; // obtuse angle at v2
     }
-    // Check if the angle at v3 is obtuse
+    //Check if the angle at v3 is obtuse
     if (ac2 + bc2 < ab2) {
         return v3; // obtuse angle at v3
     }
@@ -507,65 +535,18 @@ Point_2 find_obtuse_vertex(const Point_2& v1, const Point_2& v2, const Point_2& 
     throw std::logic_error("No obtuse angle found in the triangle.");
 }
 
-// Function to find the neighboring face that shares the edge (point1, point2) with the given face
-Face_handle get_neighboring_face(Face_handle face, const Point_2& point1, const Point_2& point2) {
-    // Loop through each edge of the given face to find the shared edge
-    for (int i = 0; i < 3; ++i) {
-        // Get the vertices of the current edge
-        Point_2 v1 = face->vertex((i + 1) % 3)->point();
-        Point_2 v2 = face->vertex((i + 2) % 3)->point();
-        // Check if the edge matches the provided points
-        if ((v1 == point1 && v2 == point2) || (v1 == point2 && v2 == point1)) {
-            // Return the neighboring face that shares this edge
-            return face->neighbor(i);
-        }
-    }
-
-    // If no neighboring face is found, return a null handle
-    return Face_handle();
-}
-
-
-Vertex_handle find_nearest_vertex(const Custom_CDT& cdt, const Point_2& query_point) {
-    // Initialize with an invalid vertex handle
-    Vertex_handle nearest_vertex = nullptr;
-    double min_distance = std::numeric_limits<double>::max();
-
-    for (auto v = cdt.finite_vertices_begin(); v != cdt.finite_vertices_end(); ++v) {
-        double distance = CGAL::to_double(squared_distance(v->point(), query_point));
-        if (distance < min_distance) {
-            min_distance = distance;
-            nearest_vertex = v;
-        }
-    }
-
-    return nearest_vertex;
-}
-
-//if 2 points is on the boundary
-bool are_points_on_polygon(const Polygon& polygon, const Point_2& p1, const Point_2& p2) {
-    // Check if p1 and p2 are inside or on the boundary
-    bool p1_on_polygon = (polygon.bounded_side(p1) == CGAL::ON_BOUNDED_SIDE ||
-                          polygon.has_on_boundary(p1));
-    bool p2_on_polygon = (polygon.bounded_side(p2) == CGAL::ON_BOUNDED_SIDE ||
-                          polygon.has_on_boundary(p2));
-    
-    // Return true if both points are on the polygon (inside or on the boundary)
-    return p1_on_polygon && p2_on_polygon;
-}
-
 CGAL::Segment_2<K> find_longest_edge(const Point_2& p1, const Point_2& p2, const Point_2& p3) {
-    // Create segments for each edge of the triangle
+    //Create segments for each edge of the triangle
     CGAL::Segment_2<K> edge1(p1, p2);
     CGAL::Segment_2<K> edge2(p2, p3);
     CGAL::Segment_2<K> edge3(p3, p1);
 
-    // Compare the squared lengths of the segments to find the longest one
+    //Compare the squared lengths of the segments to find the longest one
     auto length1 = CGAL::squared_distance(p1, p2);
     auto length2 = CGAL::squared_distance(p2, p3);
     auto length3 = CGAL::squared_distance(p3, p1);
 
-    // Determine which edge is the longest
+    //Determine which edge is the longest
     if (length1 >= length2 && length1 >= length3) {
         return edge1;
     } else if (length2 >= length1 && length2 >= length3) {
@@ -573,6 +554,59 @@ CGAL::Segment_2<K> find_longest_edge(const Point_2& p1, const Point_2& p2, const
     } else {
         return edge3;
     }
+}
+
+Point_2 find_medial_of_longest_side(const Point_2& p1, const Point_2& p2, const Point_2& p3) {
+    // Calculate the squared lengths of each side
+    double length1_sq = CGAL::to_double(CGAL::squared_distance(p1, p2)); // Side p1 - p2
+    double length2_sq = CGAL::to_double(CGAL::squared_distance(p2, p3)); // Side p2 - p3
+    double length3_sq = CGAL::to_double(CGAL::squared_distance(p1, p3)); // Side p1 - p3
+
+    // Find the longest side
+    if (length1_sq >= length2_sq && length1_sq >= length3_sq) {
+        // Longest side is p1 - p2
+        return CGAL::midpoint(p1, p2);
+    } else if (length2_sq >= length1_sq && length2_sq >= length3_sq) {
+        // Longest side is p2 - p3
+        return CGAL::midpoint(p2, p3);
+    } else {
+        // Longest side is p1 - p3
+        return CGAL::midpoint(p1, p3);
+    }
+}
+
+Point_2 find_orthocenter(const Point_2& p1, const Point_2& p2, const Point_2& p3) {
+    //Calculate slopes and midpoints of sides
+    Line_2 line1(p1, p2);
+    Line_2 line2(p2, p3);
+    Line_2 line3(p1, p3);
+
+    //Find the orthogonal bisectors
+    Line_2 perp1 = line1.perpendicular(p3);
+    Line_2 perp2 = line2.perpendicular(p1);
+
+    //Intersection of two perpendiculars gives the orthocenter
+    CGAL::Object result = CGAL::intersection(perp1, perp2);
+    const Point_2* orthocenter = CGAL::object_cast<Point_2>(&result);
+    
+    //Ensure result validity
+    if (orthocenter) {
+        return *orthocenter;
+    } else {
+        throw std::runtime_error("Orthocenter calculation failed.");
+    }
+}
+
+//Found if this face is on the boundary!!
+bool is_face_on_boundary(const Custom_CDT& cdt, Custom_CDT::Face_handle face) {
+    //Loop through each edge of the face
+    for (int i = 0; i < 3; ++i) {
+        Custom_CDT::Edge edge(face, i);
+        if (cdt.is_infinite(face->neighbor(i))) {
+            return true; //Edge is on the boundary
+        }
+    }
+    return false;
 }
 
     

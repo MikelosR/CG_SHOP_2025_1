@@ -496,19 +496,13 @@ bool is_face_on_boundary(const Custom_CDT& cdt, Face_handle face) {
     return false;
 }
 
-// Function to check if a vertex in custom_cdt is a Steiner point
+//Function to check if a vertex in custom_cdt is a Steiner point
 bool is_steiner_point(Vertex_handle vertex, const vector<Point_2>& original_points) {
     const Point_2& v_point = vertex->point();
-    // Check if v_point is in the original_points vector
+    //Check if v_point is in the original_points vector
     return std::none_of(original_points.begin(), original_points.end(), [&v_point](const Point_2& p) { return p == v_point; });
 }
 
-// Helper function to convert CGAL exact values to strings
-std::string convert_to_string(const CGAL::Exact_predicates_exact_constructions_kernel::FT& val) {
-    std::ostringstream oss;
-    oss << val;
-    return oss.str();
-}
 
 void output(value jv, Custom_CDT custom_cdt, vector<CGAL::Point_2<CGAL::Epeck>> points) {
     // Get instance_uid from input JSON
@@ -580,3 +574,25 @@ void output(value jv, Custom_CDT custom_cdt, vector<CGAL::Point_2<CGAL::Epeck>> 
     cout << "Solution JSON file written as solution_output.json" << endl;
     return;
 }
+
+//Convert coord into string like franction. If it is int, return string like int
+std::string convert_to_string(const K::FT& coord) {
+    const auto exact_coord = CGAL::exact(coord);
+    std::ostringstream oss;
+     // Check if the coordinate is an integer
+    if (exact_coord.get_den() == 1) {
+        oss << coord;
+        return oss.str();   
+    }
+    oss << exact_coord.get_num() << "/" << exact_coord.get_den();
+    
+    // Return the formatted string
+    return oss.str();
+}
+
+
+//Alternative is_steiner_point
+/*bool is_steiner_point(const Custom_CDT::Vertex_handle& vertex, const std::vector<Point_2>& initial_points) {
+    return std::find(initial_points.begin(), initial_points.end(), vertex->point()) == initial_points.end();
+}*/
+

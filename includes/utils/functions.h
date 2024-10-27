@@ -16,6 +16,10 @@
 #include <CGAL/squared_distance_2.h>
 #include <CGAL/number_utils.h>
 #include <CGAL/Polygon_2_algorithms.h>
+#include <gmp.h>
+#include <CGAL/Gmpq.h>
+#include <sstream>
+
 
 using namespace boost::json;
 using namespace std;
@@ -28,6 +32,8 @@ using Point_2 = K::Point_2;
 using Line_2 = K::Line_2;
 using Face_handle = Custom_CDT::Face_handle;
 using Vertex_handle = Custom_CDT::Vertex_handle;
+typedef K::FT FT;
+
  
 
 //Calculate squared distance between two points
@@ -81,6 +87,6 @@ bool is_face_on_boundary(const Custom_CDT& cdt, Custom_CDT::Face_handle face);
 //JSON OUTPUT METHODS 
 bool is_steiner_point(Vertex_handle vertex, const std::vector<Point_2>& original_points);
 
-std::string convert_to_string(const CGAL::Exact_predicates_exact_constructions_kernel::FT& val);
+void output(value jv, Custom_CDT custom_cdt, vector<Point_2> points);
 
-void output(value jv, Custom_CDT custom_cdt, std::vector<CGAL::Point_2<CGAL::Epeck>> points);
+std::string convert_to_string(const K::FT& coord);

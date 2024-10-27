@@ -19,7 +19,7 @@
     read_json("tests/instance_1_1.json", jv);         //0 obtuses 100% success
     read_json("tests/instance_2_1.json", jv);         //0 obtuses 100% success
     read_json("tests/instance_3_1.json", jv);         //0 obtuses 100% success
-    read_json("tests/instance_4_1.json", jv);         //0 obtuses 60% success
-    read_json("tests/instance_5_1.json", jv);         //0 obtuses 10% success    
-    read_json("tests/instance_6_1.json", jv);         //0 obtuses 66% success
-    read_json("tests/instance_7_1.json", jv);         //0 obtuses 83% success
+    read_json("tests/instance_4_1.json", jv);         //4 obtuses 60% success
+    read_json("tests/instance_5_1.json", jv);         //9 obtuses 10% success    
+    read_json("tests/instance_6_1.json", jv);         //2 obtuses 66% success
+    read_json("tests/instance_7_1.json", jv);         //1 obtuses 83% success

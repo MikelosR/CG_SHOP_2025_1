@@ -394,7 +394,7 @@ void start_the_flips(Custom_CDT& cdt, const Polygon& polygon){
             //if the eddge is constraints or is on
             if (cdt.is_constrained(*edge) || is_edge_in_boundary(p1, p3, polygon)) continue;
             
-            if(can_flip(p1,p2,p3,p4)){
+            if(can_flip(p1, p2, p3, p4)){
                 cdt.flip(f1, i);
                 progress = true;
                 break;

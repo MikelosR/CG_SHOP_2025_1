@@ -14,8 +14,8 @@ int main() {
     value jv;
 
     // REPLACE THE FOLLOWING LINE WITH ANY FROM THE FOLDER TESTS/TEST_DOC.TXT
-    read_json("tests/instance_5_1.json", jv);                  //5 obtuses 76%  success
-     
+    read_json("tests/pdf.json", jv);       //5 obtuses 76%  success
+    
     vector<Point_2> points;
     vector<std::pair<int, int>> additional_constraints;
     vector<int> region_boundary;

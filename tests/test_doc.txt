@@ -1,0 +1,25 @@
+    read_json("tests/pdf.json", jv);                  //5 obtuses 76%  success
+    read_json("tests/instance_test_1.json", jv);      //0 obtuses 100% success
+    read_json("tests/instance_test_2.json", jv);      //0 obtuses 100% success
+    read_json("tests/instance_test_3.json", jv);      //0 obtuse  100% success
+    read_json("tests/instance_test_4.json", jv);      //0 obtuses 100% success
+    read_json("tests/instance_test_5.json", jv);      //0 obtuses 100% success
+    read_json("tests/instance_test_6.json", jv);      //1 obtuse   75% success
+    read_json("tests/instance_test_7.json", jv);      //1 obtuse   75% success
+    read_json("tests/instance_test_8.json", jv);      //1 obtuse   80% success
+    read_json("tests/instance_test_9.json", jv);      //1 obtuse   86% success
+    read_json("tests/instance_test_10.json", jv);     //1 obtuse   66% success
+    read_json("tests/instance_test_11.json", jv);     //6 obtuses  40% success
+    read_json("tests/instance_test_12.json", jv);     //0 obtuses 100% success
+    read_json("tests/instance_test_13.json", jv);     //4 obtuses  33% success
+    read_json("tests/instance_test_14.json", jv);     //2 obtuses  60% success
+    read_json("tests/instance_test_15.json", jv);     //2 obtuses  60% success
+    read_json("tests/instance_test_16.json", jv);     //1 obtuse   80% success
+
+    read_json("tests/instance_1_1.json", jv);         //0 obtuses 100% success
+    read_json("tests/instance_2_1.json", jv);         //0 obtuses 100% success
+    read_json("tests/instance_3_1.json", jv);         //0 obtuses 100% success
+    read_json("tests/instance_4_1.json", jv);         //0 obtuses 60% success
+    read_json("tests/instance_5_1.json", jv);         //0 obtuses 10% success    
+    read_json("tests/instance_6_1.json", jv);         //0 obtuses 66% success
+    read_json("tests/instance_7_1.json", jv);         //0 obtuses 83% success

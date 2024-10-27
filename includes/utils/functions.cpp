@@ -138,7 +138,6 @@ void insert_midpoint(Custom_CDT& custom_cdt, const Polygon& polygon) {
                         custom_cdt.insert_no_flip(midpoint);
                         start_the_flips(custom_cdt, polygon);
                         progress = true;
-                        cout << "Midpoint inserted to reduce obtuse angles.\n";
                         break;
                     }
                 }
@@ -177,100 +176,6 @@ void insert_orthocenter(Custom_CDT& custom_cdt, const Polygon& polygon) {
                         custom_cdt.insert_no_flip(orthocenter);
                         start_the_flips(custom_cdt, polygon);
                         progress = true;
-                        std::cout << "Orthocenter inserted to reduce obtuse angles.\n";
-                        break;
-                    }
-                }
-            }
-            if(count_obtuse_triangles(custom_cdt, polygon) == 0) progress = 0;
-        }
-    }
-}
-
-
-void insert_incenter(Custom_CDT& custom_cdt, const Polygon& polygon) {
-    bool progress = true;
-    while (progress) {
-        progress = false;
-        for (auto face = custom_cdt.finite_faces_begin(); face != custom_cdt.finite_faces_end(); ++face) {
-            Point_2 p1 = face->vertex(0)->point();
-            Point_2 p2 = face->vertex(1)->point();
-            Point_2 p3 = face->vertex(2)->point();
-
-            if (is_obtuse(p1, p2, p3)) {
-                Custom_CDT simulation = custom_cdt;
-                Point_2 incenter = find_incenter(p1, p2, p3);
-
-                if (is_point_inside_region(incenter, polygon)) {
-                    int obtuses_before = count_obtuse_triangles(simulation, polygon);
-                    simulation.insert_no_flip(incenter);
-                    start_the_flips(simulation, polygon);
-                    if (obtuses_before > count_obtuse_triangles(simulation, polygon)) {
-                        custom_cdt.insert_no_flip(incenter);
-                        start_the_flips(custom_cdt, polygon);
-                        progress = true;
-                        std::cout << "Incenter inserted to reduce obtuse angles.\n";
-                        break;
-                    }
-                }
-            }
-            if(count_obtuse_triangles(custom_cdt, polygon) == 0) progress = 0;
-        }
-    }
-}
-
-
-Point_2 find_incenter(const Point_2& p1, const Point_2& p2, const Point_2& p3) {
-    //Calculate the lengths of the sides
-    double a = std::sqrt(CGAL::to_double(CGAL::squared_distance(p2, p3)));
-    double b = std::sqrt(CGAL::to_double(CGAL::squared_distance(p1, p3)));
-    double c = std::sqrt(CGAL::to_double(CGAL::squared_distance(p1, p2)));
-
-    //Calculate the coordinates of the incenter using CGAL types
-    auto incenter_x = (a * CGAL::to_double(p1.x()) + b * CGAL::to_double(p2.x()) + c * CGAL::to_double(p3.x())) / (a + b + c);
-    auto incenter_y = (a * CGAL::to_double(p1.y()) + b * CGAL::to_double(p2.y()) + c * CGAL::to_double(p3.y())) / (a + b + c);
-
-    //Return the incenter as a Point_2 object
-    return Point_2(incenter_x, incenter_y);
-}
-
-void insert_bisector(Custom_CDT& custom_cdt, const Polygon& polygon) {
-    bool progress = true;
-    while (progress) {
-        progress = false;
-        for (auto face = custom_cdt.finite_faces_begin(); face != custom_cdt.finite_faces_end(); ++face) {
-            Point_2 p1 = face->vertex(0)->point();
-            Point_2 p2 = face->vertex(1)->point();
-            Point_2 p3 = face->vertex(2)->point();
-
-            if (is_obtuse(p1, p2, p3)) {
-                Custom_CDT simulation = custom_cdt;
-                Point_2 obtuse_vertex = find_obtuse_vertex(p1, p2, p3);
-                Point_2 opposite1, opposite2;
-
-                if (obtuse_vertex == p1) {
-                    opposite1 = p2;
-                    opposite2 = p3;
-                } else if (obtuse_vertex == p2) {
-                    opposite1 = p1;
-                    opposite2 = p3;
-                } else {
-                    opposite1 = p1;
-                    opposite2 = p2;
-                }
-
-                // Calculate the medial point of the longest side
-                Point_2 medial_point = find_medial_of_longest_side(p1, p2, p3);
-
-                if (is_point_inside_region(medial_point, polygon)) {
-                    int obtuses_before = count_obtuse_triangles(simulation, polygon);
-                    simulation.insert_no_flip(medial_point);
-                    start_the_flips(simulation, polygon);
-                    if (obtuses_before > count_obtuse_triangles(simulation, polygon)) {
-                        custom_cdt.insert_no_flip(medial_point);
-                        start_the_flips(custom_cdt, polygon);
-                        progress = true;
-                        std::cout << "Medial point of the longest side inserted to reduce obtuse angles.\n";
                         break;
                     }
                 }
@@ -375,7 +280,6 @@ void insert_projection(Custom_CDT& custom_cdt, const Polygon polygon){
             --face;
             
             if(count_obtuse_triangles(custom_cdt, polygon) == 0){
-                CGAL::draw(custom_cdt);
                 progress = false;
                 break;
             }
@@ -440,7 +344,6 @@ void insert_circumcenter_centroid(Custom_CDT& custom_cdt, const Polygon& polygon
                             custom_cdt.insert(centroid);
                             start_the_flips(custom_cdt, polygon);
                             progress = true;
-                            cout<<"The centroid steiner inserted"<<endl;
                             break;
                         }
                     }
@@ -466,12 +369,8 @@ bool can_insert_centroid(Custom_CDT& custom_cdt, Face_handle& triangleA, const P
     int final_obtuse_count = count_obtuse_triangles(simulation, polygon);
 
     //Check if the number of obtuse triangles decreased or stayed the same
-    if (final_obtuse_count < initial_obtuse_count) {
-        cout<<"Centroid Steiner insertion reduced obtuse angles: initial = "<<initial_obtuse_count<<", final = "<< final_obtuse_count<<endl;
-        return true;
-    } else {
-        return false;
-    }
+    if (final_obtuse_count < initial_obtuse_count) return true;
+    else return false;
 }
 
 
@@ -519,18 +418,9 @@ Point_2 find_obtuse_vertex(const Point_2& v1, const Point_2& v2, const Point_2& 
     double ac2 = CGAL::to_double(squared_distance(v1, v3));
     double bc2 = CGAL::to_double(squared_distance(v2, v3));
 
-    //Check if the angle at v1 is obtuse
-    if (ab2 + ac2 < bc2) {
-        return v1; // obtuse angle at v1
-    }
-    //Check if the angle at v2 is obtuse
-    if (ab2 + bc2 < ac2) {
-        return v2; // obtuse angle at v2
-    }
-    //Check if the angle at v3 is obtuse
-    if (ac2 + bc2 < ab2) {
-        return v3; // obtuse angle at v3
-    }
+    if (ab2 + ac2 < bc2) return v1; // obtuse angle at v1
+    if (ab2 + bc2 < ac2) return v2; // obtuse angle at v2
+    if (ac2 + bc2 < ab2) return v3; // obtuse angle at v3
 
     throw std::logic_error("No obtuse angle found in the triangle.");
 }
@@ -590,15 +480,12 @@ Point_2 find_orthocenter(const Point_2& p1, const Point_2& p2, const Point_2& p3
     const Point_2* orthocenter = CGAL::object_cast<Point_2>(&result);
     
     //Ensure result validity
-    if (orthocenter) {
-        return *orthocenter;
-    } else {
-        throw std::runtime_error("Orthocenter calculation failed.");
-    }
+    if (orthocenter) return *orthocenter;
+    else throw std::runtime_error("Orthocenter calculation failed.");
 }
 
 //Found if this face is on the boundary!!
-bool is_face_on_boundary(const Custom_CDT& cdt, Custom_CDT::Face_handle face) {
+bool is_face_on_boundary(const Custom_CDT& cdt, Face_handle face) {
     //Loop through each edge of the face
     for (int i = 0; i < 3; ++i) {
         Custom_CDT::Edge edge(face, i);
@@ -609,4 +496,87 @@ bool is_face_on_boundary(const Custom_CDT& cdt, Custom_CDT::Face_handle face) {
     return false;
 }
 
-    
+// Function to check if a vertex in custom_cdt is a Steiner point
+bool is_steiner_point(Vertex_handle vertex, const vector<Point_2>& original_points) {
+    const Point_2& v_point = vertex->point();
+    // Check if v_point is in the original_points vector
+    return std::none_of(original_points.begin(), original_points.end(), [&v_point](const Point_2& p) { return p == v_point; });
+}
+
+// Helper function to convert CGAL exact values to strings
+std::string convert_to_string(const CGAL::Exact_predicates_exact_constructions_kernel::FT& val) {
+    std::ostringstream oss;
+    oss << val;
+    return oss.str();
+}
+
+void output(value jv, Custom_CDT custom_cdt, vector<CGAL::Point_2<CGAL::Epeck>> points) {
+    // Get instance_uid from input JSON
+    std::string instance_uid = jv.as_object().at("instance_uid").as_string().c_str();
+
+    // Prepare steiner points lists
+    vector<std::string> steiner_points_x;
+    vector<std::string> steiner_points_y;
+
+    for (auto vertex = custom_cdt.finite_vertices_begin(); vertex != custom_cdt.finite_vertices_end(); ++vertex) {
+        // if a vertex is not found in the initial points then it must be a steiner point
+        if (is_steiner_point(vertex, points)) {  
+            const Point_2& p = vertex->point();
+            steiner_points_x.push_back(convert_to_string(p.x()));  // Store x-coordinate as string
+            steiner_points_y.push_back(convert_to_string(p.y()));  // Store y-coordinate as string
+        }
+    }
+
+    // Convert steiner_points_x and steiner_points_y to JSON-compatible format
+    boost::json::array steiner_points_x_json;
+    boost::json::array steiner_points_y_json;
+
+    for (const auto& x : steiner_points_x) {
+        steiner_points_x_json.push_back(boost::json::value(x));
+    }
+
+    for (const auto& y : steiner_points_y) {
+        steiner_points_y_json.push_back(boost::json::value(y));
+    }
+
+    // Prepare edges list
+    vector<std::pair<int, int>> edges;
+    std::map<Vertex_handle, int> vertex_index_map;
+    int index = 0;
+
+    // Map vertices to unique indices for edge representation
+    for (auto vertex = custom_cdt.finite_vertices_begin(); vertex != custom_cdt.finite_vertices_end(); ++vertex) {
+        vertex_index_map[vertex] = index++;
+    }
+
+    for (auto edge = custom_cdt.finite_edges_begin(); edge != custom_cdt.finite_edges_end(); ++edge) {
+        Vertex_handle v1 = edge->first->vertex((edge->second + 1) % 3);
+        Vertex_handle v2 = edge->first->vertex((edge->second + 2) % 3);
+        edges.emplace_back(vertex_index_map[v1], vertex_index_map[v2]);
+    }
+
+    // Convert edges to json-compatible format
+    boost::json::array edges_json;
+    for (const auto& edge : edges) {
+        boost::json::array edge_pair = {edge.first, edge.second};
+        edges_json.push_back(edge_pair);
+    }
+
+    // make the json file look pretty (not in a single line)
+    std::ostringstream json_output;
+    json_output << "{\n";
+    json_output << "  \"content_type\": \"CG_SHOP_2025_Solution\",\n";
+    json_output << "  \"instance_uid\": \"" << instance_uid << "\",\n";
+    json_output << "  \"steiner_points_x\": " << boost::json::serialize(steiner_points_x_json) << ",\n";
+    json_output << "  \"steiner_points_y\": " << boost::json::serialize(steiner_points_y_json) << ",\n";
+    json_output << "  \"edges\": " << boost::json::serialize(edges_json) << "\n";
+    json_output << "}\n";
+
+    // write json to file
+    std::ofstream output_file("solution_output.json");
+    output_file << json_output.str();
+    output_file.close();
+
+    cout << "Solution JSON file written as solution_output.json" << endl;
+    return;
+}

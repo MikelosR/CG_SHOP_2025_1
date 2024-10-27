@@ -61,12 +61,8 @@ Point_2 find_obtuse_vertex(const Point_2& v1, const Point_2& v2, const Point_2& 
 //Steiner methods
 void insert_circumcenter_centroid(Custom_CDT& custom_cdt, const Polygon& polygon);
 void insert_projection(Custom_CDT& custom_cdt, const Polygon polygon);
-void insert_incenter(Custom_CDT& custom_cdt, const Polygon& polygon);
-void insert_bisector(Custom_CDT& custom_cdt, const Polygon& polygon);
 void insert_midpoint(Custom_CDT& custom_cdt, const Polygon& polygon);
 void insert_orthocenter(Custom_CDT& custom_cdt, const Polygon& polygon);
-
-Point_2 find_incenter(const Point_2& p1, const Point_2& p2, const Point_2& p3);
 
 Point_2 find_medial_of_longest_side(const Point_2& p1, const Point_2& p2, const Point_2& p3);
 
@@ -81,3 +77,10 @@ bool can_insert_centroid(Custom_CDT& custom_cdt, Face_handle& triangleA, const P
 CGAL::Segment_2<K> find_longest_edge(const Point_2& p1, const Point_2& p2, const Point_2& p3);
 
 bool is_face_on_boundary(const Custom_CDT& cdt, Custom_CDT::Face_handle face);
+
+//JSON OUTPUT METHODS 
+bool is_steiner_point(Vertex_handle vertex, const std::vector<Point_2>& original_points);
+
+std::string convert_to_string(const CGAL::Exact_predicates_exact_constructions_kernel::FT& val);
+
+void output(value jv, Custom_CDT custom_cdt, std::vector<CGAL::Point_2<CGAL::Epeck>> points);

@@ -94,8 +94,8 @@ CG_SHOP_2025_1:
 4. Οδηγίες Μεταγλώττισης & Εκτέλεσης στο terminal:
     Step 1: /path/to/program
     Step 2: cmake -DCGAL_DIR=/usr/lib/CGAL
-    Step 2: make
-    Step 3: ./project
+    Step 3: make
+    Step 4: ./project
 
     ΠΡΟΣΟΧΗ! Δεν πρέπει να τρέξει η εντολή cgal_create_CMakeLists -s, το CMakeLists.txt στον υπάρχων φάκελο είναι το κατάλληλο
     και περιέχει τα κατάλληλα includes βιβλιοθηκών για το υπάρχον πρόγραμμα

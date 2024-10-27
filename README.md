@@ -91,8 +91,9 @@ CG_SHOP_2025_1:
         export CGAL_ROOT="το path που βρίσκεται ο φάκελος της βιβλιοθήκης CGAL-5.6.1"
     Χρησιμοποιήθηκε η έκδοση 1_80_0 της Boost στην υπολοποίησή μας.
 
-4. Οδηγίες Μεταγλώττισης & Εκτέλεσης:
+4. Οδηγίες Μεταγλώττισης & Εκτέλεσης στο terminal:
     Step 1: /path/to/program
+    Step 2: cmake -DCGAL_DIR=/usr/lib/CGAL
     Step 2: make
     Step 3: ./project 
 

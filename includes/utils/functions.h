@@ -16,9 +16,6 @@
 #include <CGAL/squared_distance_2.h>
 #include <CGAL/number_utils.h>
 #include <CGAL/Polygon_2_algorithms.h>
-#include <gmp.h>
-#include <CGAL/Gmpq.h>
-#include <sstream>
 
 
 using namespace boost::json;
@@ -89,4 +86,4 @@ bool is_steiner_point(Vertex_handle vertex, const std::vector<Point_2>& original
 
 void output(value jv, Custom_CDT custom_cdt, vector<Point_2> points);
 
-std::string convert_to_string(const K::FT& coord);
+std::string convert_to_string(const FT& coord);

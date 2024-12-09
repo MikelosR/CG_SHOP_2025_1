@@ -36,6 +36,7 @@ void read_json(const std::string& filename, value& jv) {
     jv = parse(json_str);
 }
 
+//DELETE
 //Just check if an edge is part of the additional constrains
 bool is_in_constraints(const std::pair<int, int>& edge, const vector<std::pair<int, int>>& constraints) {
     return std::find(constraints.begin(), constraints.end(), edge) != constraints.end() ||
@@ -44,6 +45,7 @@ bool is_in_constraints(const std::pair<int, int>& edge, const vector<std::pair<i
 
 }
 
+//DELETE
 //Just check if an edge is part of the region boundary
 bool is_in_region_boundary(const std::pair<int, int>& edge, const vector<int>& boundary) {
     for (int i = 0; i < boundary.size(); ++i) {
@@ -221,7 +223,7 @@ void insert_projection(Custom_CDT& custom_cdt, const Polygon polygon){
                 bool insert_projection = is_point_inside_region(projected_point, polygon);
                 
                 int obtuses_before = count_obtuse_triangles(simulation, polygon);
-                //Itarate all the faces of the boundary. If the point in side (not on) of the boundary is obtuse, insert projection
+                //Iterate all the faces of the boundary. If the point in side (not on) of the boundary is obtuse, insert projection
                 if(fill_boundary && insert_projection){
                     if(is_face_on_boundary(custom_cdt, face) && !(polygon.bounded_side(obtuse_angle_vertex) == CGAL::ON_BOUNDARY)){
                         simulation.insert_no_flip(projected_point);
@@ -273,7 +275,7 @@ void insert_projection(Custom_CDT& custom_cdt, const Polygon polygon){
                     }
                 }
             }
-            //when the case of itaration of boundary faces ends
+            //when the case of iteration of boundary faces ends
             if((++face == custom_cdt.finite_faces_end()) && (fill_boundary)){
                 fill_boundary = false;
             }
@@ -285,7 +287,6 @@ void insert_projection(Custom_CDT& custom_cdt, const Polygon polygon){
             }
             continue;
         }
-        
     }
 }
 
@@ -335,19 +336,19 @@ void insert_circumcenter_centroid(Custom_CDT& custom_cdt, const Polygon& polygon
                             break;
                         }
                     }
-                    else{
-                        //Cetroid case (if circumcenter went out of bounds)
-                        Point_2 centroid = CGAL::centroid(p1, p2, p3);
-                        bool insert_centroid = can_insert_centroid(custom_cdt, triangleA, centroid, polygon);
-                        //Just check if the insertion of centroid has a benefit
-                        if(insert_centroid){
-                            custom_cdt.insert(centroid);
-                            start_the_flips(custom_cdt, polygon);
-                            progress = true;
-                            break;
-                        }
+                }
+                else{
+                    //Cetroid case (if circumcenter went out of bounds)
+                    Point_2 centroid = CGAL::centroid(p1, p2, p3);
+                    bool insert_centroid = can_insert_centroid(custom_cdt, triangleA, centroid, polygon);
+                    //Just check if the insertion of centroid has a benefit
+                    if(insert_centroid){
+                        custom_cdt.insert(centroid);
+                        start_the_flips(custom_cdt, polygon);
+                        progress = true;
+                        break;
                     }
-                } 
+                }
             }
         }
     }
@@ -391,7 +392,7 @@ void start_the_flips(Custom_CDT& cdt, const Polygon& polygon){
             //Mirror index gets the opposite vertex of the second triangle (f2)
             int mirror_index = cdt.mirror_index(f1, i);
             Point_2 p4 = f2->vertex(mirror_index)->point(); 
-            //if the eddge is constraints or is on
+            //if the edge is constraints or is on boundary
             if (cdt.is_constrained(*edge) || is_edge_in_boundary(p1, p3, polygon)) continue;
             
             if(can_flip(p1, p2, p3, p4)){
@@ -423,6 +424,7 @@ Point_2 find_obtuse_vertex(const Point_2& v1, const Point_2& v2, const Point_2& 
     if (ac2 + bc2 < ab2) return v3; // obtuse angle at v3
 
     throw std::logic_error("No obtuse angle found in the triangle.");
+    //return Point_2(0, 0);
 }
 
 CGAL::Segment_2<K> find_longest_edge(const Point_2& p1, const Point_2& p2, const Point_2& p3) {

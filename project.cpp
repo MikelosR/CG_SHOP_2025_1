@@ -112,13 +112,13 @@ int main() {
         insert_projection(custom_cdt, polygon);
         num_obtuses_after = count_obtuse_triangles(custom_cdt, polygon);
         //cout<<"Num of Obtuses after PROJECTION: "<<num_obtuses_after<<endl;
-        /* CGAL::draw(custom_cdt); */
+        //CGAL::draw(custom_cdt);
         if(num_obtuses_after == 0) break;
         
         //Orthocenter
         num_obtuses_before = count_obtuse_triangles(custom_cdt, polygon);
         //cout<<"Num of Obtuses before ORTHOCENTER: " <<num_obtuses_before<<endl;
-        /*Steiner Points Orthocenter*/
+        //Steiner Points Orthocenter
         insert_orthocenter(custom_cdt, polygon);
         num_obtuses_after = count_obtuse_triangles(custom_cdt, polygon);
         //cout<<"Num of Obtuses after ORTHOCENTER: "<<num_obtuses_after<<endl;
@@ -134,6 +134,7 @@ int main() {
     double success;
     if(init_obtuses>0) success = ((double)end/(double)init_obtuses)*100;
     cout<<100-success<<"%"<<" reduction success the obtuse triangles"<<endl;
+    CGAL::draw(custom_cdt);
 //////////// PHASE 3: JSON FILE OUTPUT //////////////////////////////
 
     output(jv, custom_cdt, points);
